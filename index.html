@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StreamFlix | Powered by TMDB & YouTube</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #141414;
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .movie-card {
+            transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .movie-card:hover {
+            transform: scale(1.1) translateY(-10px);
+            z-index: 50;
+        }
+
+        .hero-overlay {
+            background: linear-gradient(to top, #141414 8%, transparent 92%),
+                        linear-gradient(to right, #141414 0%, transparent 50%);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .navbar-transition {
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .modal-enter {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Hero Content Fade Animation */
+        .content-fade {
+            animation: contentFadeIn 1s ease-out forwards;
+        }
+
+        @keyframes contentFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hero Autoplay Progress Bar */
+        .progress-bar {
+            height: 2px;
+            background: #e50914;
+            width: 0%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            transition: width 8s linear;
+            z-index: 30;
+        }
+    </style>
+</head>
+<body class="bg-[#141414]">
+
+    <!-- Navbar -->
+    <header id="navbar" class="fixed w-full z-[100] navbar-transition px-4 md:px-12 py-4 flex justify-between items-center bg-transparent">
+        <div class="flex items-center space-x-10">
+            <h1 class="text-red-600 text-2xl md:text-3xl font-extrabold tracking-tighter cursor-pointer" onclick="window.location.reload()">STREAMFLIX</h1>
+            <nav class="hidden lg:flex space-x-6 text-sm font-light">
+                <a href="#" class="hover:text-gray-300 transition">Home</a>
+                <a href="#" class="hover:text-gray-300 transition">TV Shows</a>
+                <a href="#" class="hover:text-gray-300 transition">Movies</a>
+                <a href="#" class="hover:text-gray-300 transition">New & Popular</a>
+                <a href="#" class="hover:text-gray-300 transition">My List</a>
+            </nav>
+        </div>
+        
+        <div class="flex items-center space-x-4">
+            <div class="relative group hidden sm:block">
+                <input id="searchInput" type="text" placeholder="Titles, people, genres" 
+                    class="bg-black/50 border border-white/30 px-3 py-1 text-sm rounded focus:outline-none focus:border-white w-40 md:w-64 transition-all">
+                <svg class="absolute right-3 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <div class="w-8 h-8 bg-blue-600 rounded cursor-pointer overflow-hidden">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png" alt="Profile">
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <!-- Increased min-height to ensure plenty of vertical space -->
+    <section id="hero" class="relative min-h-[90vh] md:h-[95vh] w-full bg-cover bg-center flex items-center px-4 md:px-12 transition-all duration-1000 bg-gray-900 overflow-hidden">
+        <div class="hero-overlay absolute inset-0"></div>
+        <div id="heroProgressBar" class="progress-bar"></div>
+        
+        <!-- Large padding-bottom (pb-48) creates a safe zone for the rows sliding up -->
+        <div id="heroContent" class="relative max-w-2xl z-10 pt-32 pb-48 md:pb-64">
+            <div class="flex items-center space-x-2 mb-2">
+                <img src="https://cdn-icons-png.flaticon.com/512/732/732228.png" class="w-5 h-5" alt="N">
+                <span class="text-xs tracking-[0.3em] font-bold text-gray-300 uppercase" id="heroLabel">Series</span>
+            </div>
+            <h2 id="heroTitle" class="text-4xl md:text-7xl font-bold mb-4 drop-shadow-2xl min-h-[1.2em]"></h2>
+            <div class="flex items-center space-x-3 mb-4 text-sm font-semibold">
+                <span class="text-green-500" id="heroMatch">98% Match</span>
+                <span id="heroYear" class="text-gray-300"></span>
+                <span class="border px-1 text-[10px]">HD</span>
+                <span class="border border-white/40 px-1 rounded text-[10px]">4K Ultra HD</span>
+            </div>
+            <p id="heroDesc" class="text-sm md:text-lg mb-6 text-gray-200 drop-shadow-md leading-relaxed line-clamp-3">
+            </p>
+            <div class="flex space-x-3">
+                <button id="heroPlayBtn" class="bg-white text-black px-8 py-2 rounded-md font-bold hover:bg-white/80 transition flex items-center space-x-2">
+                    <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <span>Play</span>
+                </button>
+                <button id="heroInfoBtn" class="bg-gray-500/50 text-white px-8 py-2 rounded-md font-bold hover:bg-gray-500/30 transition flex items-center space-x-2 backdrop-blur-md">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>More Info</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Containers -->
+    <!-- Coordinated negative margin to slide up into the hero's safe zone -->
+    <div id="mainContent" class="-mt-40 md:-mt-52 relative z-20 pb-20">
+        <!-- Dynamic rows go here -->
+    </div>
+
+    <!-- Video Modal Player -->
+    <div id="videoModal" class="fixed inset-0 z-[300] hidden bg-black flex items-center justify-center">
+        <button id="closeVideo" class="absolute top-6 right-6 z-[310] text-white hover:text-gray-400 transition">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="w-full h-full max-w-6xl max-h-[80vh] px-4">
+            <div id="player" class="w-full h-full rounded-lg overflow-hidden shadow-2xl bg-black"></div>
+        </div>
+    </div>
+
+    <!-- Movie Modal -->
+    <div id="movieModal" class="fixed inset-0 z-[200] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-[#181818] w-full max-w-4xl rounded-xl overflow-hidden relative modal-enter shadow-2xl my-8">
+            <button id="closeModal" class="absolute top-4 right-4 z-50 bg-black/50 p-2 rounded-full hover:bg-white/10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div id="modalBanner" class="h-64 md:h-96 bg-cover bg-center relative group">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#181818] via-transparent to-transparent"></div>
+                <div class="absolute bottom-10 left-8">
+                    <button id="modalPlayBtn" class="bg-white text-black px-8 py-2 rounded-md font-bold hover:bg-white/80 transition flex items-center space-x-2">
+                        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <span>Play</span>
+                    </button>
+                </div>
+            </div>
+            <div class="p-8">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="flex-1">
+                        <h2 id="modalTitle" class="text-3xl font-bold mb-2"></h2>
+                        <div class="flex items-center space-x-4 mb-4 text-sm font-semibold">
+                            <span class="text-green-500" id="modalMatch">95% Match</span>
+                            <span id="modalYear" class="text-gray-400"></span>
+                            <span class="border px-1 text-[10px]">HD</span>
+                        </div>
+                        <p id="modalDesc" class="text-gray-300 leading-relaxed"></p>
+                    </div>
+                    <div class="w-full md:w-64 space-y-3 text-sm">
+                        <div class="flex space-x-2"><span class="text-gray-500">Popularity:</span> <span id="modalPop"></span></div>
+                        <div class="flex space-x-2"><span class="text-gray-500">Language:</span> <span id="modalLang"></span></div>
+                        <div class="flex space-x-2"><span class="text-gray-500">Vote Average:</span> <span id="modalVote" class="text-yellow-500 font-bold"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 p-10 md:px-40 text-gray-500 text-sm">
+        <div class="flex space-x-6 mb-8">
+            <a href="#" class="hover:underline">Audio Description</a>
+            <a href="#" class="hover:underline">Help Center</a>
+            <a href="#" class="hover:underline">Gift Cards</a>
+            <a href="#" class="hover:underline">Media Center</a>
+        </div>
+        <p>© 2026 StreamFlix. Using data from TMDB & YouTube APIs.</p>
+    </footer>
+
+    <script>
+        const TMDB_API_KEY = "ba5e2748d7df42cab33e99e177a6c088";
+        const BASE_URL = "https://api.themoviedb.org/3";
+        const IMG_URL = "https://image.tmdb.org/t/p/original";
+        const POSTER_URL = "https://image.tmdb.org/t/p/w500";
+
+        // State
+        let allFetchedMovies = [];
+        let trendingList = [];
+        let currentHeroIndex = 0;
+        let heroInterval = null;
+        let ytPlayer = null;
+
+        // Load YouTube API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            // Player initialized when video is requested
+        }
+
+        // Helper: Exponential Backoff Fetch
+        async function fetchWithRetry(url, options = {}, retries = 5, backoff = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                }
+                throw error;
+            }
+        }
+
+        async function initApp() {
+            try {
+                const trending = await fetchWithRetry(`${BASE_URL}/trending/all/week?api_key=${TMDB_API_KEY}`);
+                const topRated = await fetchWithRetry(`${BASE_URL}/movie/top_rated?api_key=${TMDB_API_KEY}`);
+                const action = await fetchWithRetry(`${BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=28`);
+                const scifi = await fetchWithRetry(`${BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&with_genres=878`);
+
+                trendingList = trending.results.slice(0, 10);
+                setupHero(trendingList[0]);
+                startHeroAutoplay();
+                
+                renderRow("Trending Now", trending.results);
+                renderRow("Top Picks For You", topRated.results);
+                renderRow("Adrenaline Rush", action.results);
+                renderRow("Sci-Fi Masterpieces", scifi.results);
+
+                allFetchedMovies = [...trending.results, ...topRated.results, ...action.results, ...scifi.results];
+
+                setupEventListeners();
+            } catch (err) {
+                console.error("Initialization failed:", err);
+                document.getElementById('mainContent').innerHTML = `<div class="p-20 text-center text-red-500">Failed to load content. Please check your connection.</div>`;
+            }
+        }
+
+        function setupHero(movie) {
+            const hero = document.getElementById('hero');
+            const heroContent = document.getElementById('heroContent');
+            const title = document.getElementById('heroTitle');
+            const desc = document.getElementById('heroDesc');
+            const year = document.getElementById('heroYear');
+            const label = document.getElementById('heroLabel');
+            const progressBar = document.getElementById('heroProgressBar');
+
+            heroContent.classList.remove('content-fade');
+            void heroContent.offsetWidth; 
+            heroContent.classList.add('content-fade');
+
+            progressBar.style.transition = 'none';
+            progressBar.style.width = '0%';
+            void progressBar.offsetWidth; 
+            progressBar.style.transition = 'width 8s linear';
+            progressBar.style.width = '100%';
+
+            hero.style.backgroundImage = `url('${IMG_URL}${movie.backdrop_path}')`;
+            title.textContent = movie.title || movie.name;
+            desc.textContent = movie.overview;
+            year.textContent = (movie.release_date || movie.first_air_date || "").split('-')[0];
+            label.textContent = (movie.media_type || 'movie') === 'tv' ? 'Series' : 'Movie';
+
+            document.getElementById('heroInfoBtn').onclick = () => openMovieDetails(movie.id, movie.media_type);
+            document.getElementById('heroPlayBtn').onclick = () => playVideo(movie.id, movie.media_type);
+        }
+
+        function startHeroAutoplay() {
+            if (heroInterval) clearInterval(heroInterval);
+            heroInterval = setInterval(() => {
+                currentHeroIndex = (currentHeroIndex + 1) % trendingList.length;
+                setupHero(trendingList[currentHeroIndex]);
+            }, 8000);
+        }
+
+        async function playVideo(id, type = 'movie') {
+            clearInterval(heroInterval);
+            const mediaType = type === 'tv' ? 'tv' : 'movie';
+            try {
+                const data = await fetchWithRetry(`${BASE_URL}/${mediaType}/${id}/videos?api_key=${TMDB_API_KEY}`);
+                const trailer = data.results.find(v => v.type === "Trailer" && v.site === "YouTube") || data.results[0];
+                
+                if (trailer) {
+                    showVideoModal(trailer.key);
+                } else {
+                    console.log("No trailer found.");
+                }
+            } catch (err) {
+                console.error("Error playing video:", err);
+            }
+        }
+
+        function showVideoModal(ytKey) {
+            const videoModal = document.getElementById('videoModal');
+            videoModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            if (ytPlayer) {
+                ytPlayer.loadVideoById(ytKey);
+            } else {
+                ytPlayer = new YT.Player('player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: ytKey,
+                    playerVars: {
+                        'autoplay': 1,
+                        'modestbranding': 1,
+                        'rel': 0
+                    }
+                });
+            }
+        }
+
+        function renderRow(title, movies) {
+            const mainContent = document.getElementById('mainContent');
+            const rowDiv = document.createElement('div');
+            rowDiv.className = "px-4 md:px-12 mb-10";
+            
+            const movieCards = movies.map(movie => {
+                if (!movie.poster_path) return '';
+                return `
+                    <div class="movie-card flex-shrink-0 w-36 md:w-56 cursor-pointer relative" onclick="openMovieDetails(${movie.id}, '${movie.media_type || 'movie'}')">
+                        <img src="${POSTER_URL}${movie.poster_path}" 
+                             class="rounded-md w-full aspect-[2/3] object-cover shadow-lg" 
+                             alt="${movie.title || movie.name}">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition duration-300 flex items-center justify-center rounded-md">
+                            <div class="bg-white/20 backdrop-blur-md p-2 rounded-full">
+                                <svg class="w-8 h-8 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            rowDiv.innerHTML = `
+                <h3 class="text-xl font-bold mb-4 flex items-center group cursor-pointer">
+                    ${title} 
+                    <span class="text-xs text-blue-500 opacity-0 group-hover:opacity-100 ml-3 transition">Explore All &rsaquo;</span>
+                </h3>
+                <div class="flex space-x-2 md:space-x-4 overflow-x-scroll scrollbar-hide pb-10 px-1 -mx-1">
+                    ${movieCards}
+                </div>
+            `;
+            mainContent.appendChild(rowDiv);
+        }
+
+        async function openMovieDetails(id, type = 'movie') {
+            try {
+                clearInterval(heroInterval);
+                const mediaType = type === 'tv' ? 'tv' : 'movie';
+                const movie = await fetchWithRetry(`${BASE_URL}/${mediaType}/${id}?api_key=${TMDB_API_KEY}`);
+                
+                document.getElementById('modalTitle').textContent = movie.title || movie.name;
+                document.getElementById('modalYear').textContent = (movie.release_date || movie.first_air_date || "").split('-')[0];
+                document.getElementById('modalDesc').textContent = movie.overview;
+                document.getElementById('modalPop').textContent = Math.round(movie.popularity);
+                document.getElementById('modalLang').textContent = (movie.original_language || "EN").toUpperCase();
+                document.getElementById('modalVote').textContent = (movie.vote_average || 0).toFixed(1) + " / 10";
+                
+                document.getElementById('modalBanner').style.backgroundImage = `url('${IMG_URL}${movie.backdrop_path || movie.poster_path}')`;
+                document.getElementById('modalPlayBtn').onclick = () => playVideo(id, type);
+
+                document.getElementById('movieModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } catch (err) {
+                console.error("Modal load error:", err);
+            }
+        }
+
+        function setupEventListeners() {
+            const navbar = document.getElementById('navbar');
+            const searchInput = document.getElementById('searchInput');
+            const closeModal = document.getElementById('closeModal');
+            const movieModal = document.getElementById('movieModal');
+            const closeVideo = document.getElementById('closeVideo');
+            const videoModal = document.getElementById('videoModal');
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-[#141414]');
+                    navbar.classList.remove('bg-transparent');
+                } else {
+                    navbar.classList.add('bg-transparent');
+                    navbar.classList.remove('bg-[#141414]');
+                }
+            });
+
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value;
+                
+                searchTimeout = setTimeout(async () => {
+                    if (query.length > 2) {
+                        clearInterval(heroInterval);
+                        const results = await fetchWithRetry(`${BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
+                        document.getElementById('mainContent').innerHTML = '';
+                        document.getElementById('hero').classList.add('min-h-[40vh]');
+                        renderRow(`Results for "${query}"`, results.results);
+                    } else if (query.length === 0) {
+                        document.getElementById('mainContent').innerHTML = '';
+                        document.getElementById('hero').classList.remove('min-h-[40vh]');
+                        initApp();
+                    }
+                }, 500);
+            });
+
+            closeModal.addEventListener('click', () => {
+                movieModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                startHeroAutoplay();
+            });
+
+            closeVideo.addEventListener('click', () => {
+                videoModal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                if (ytPlayer) ytPlayer.stopVideo();
+                startHeroAutoplay();
+            });
+
+            [movieModal, videoModal].forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                        document.body.style.overflow = 'auto';
+                        if (modal === videoModal && ytPlayer) ytPlayer.stopVideo();
+                        startHeroAutoplay();
+                    }
+                });
+            });
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
