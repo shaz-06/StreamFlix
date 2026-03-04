@@ -89,8 +89,39 @@
                     class="bg-black/50 border border-white/30 px-3 py-1 text-sm rounded focus:outline-none focus:border-white w-40 md:w-64 transition-all">
                 <svg class="absolute right-3 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
-            <div class="w-8 h-8 bg-blue-600 rounded cursor-pointer overflow-hidden">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png" alt="Profile">
+            <div class="relative">
+                <div id="profileBtn" class="w-8 h-8 bg-blue-600 rounded cursor-pointer overflow-hidden">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png">
+                </div>
+            
+                <div id="profileMenu" class="hidden absolute right-0 mt-3 w-48 bg-black border border-gray-700 rounded shadow-lg">
+            
+                    <div class="p-3 border-b border-gray-700 flex items-center space-x-2">
+                        <img class="w-6 h-6 rounded" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png">
+                        <span class="text-sm">Shashank</span>
+                    </div>
+            
+                    <ul class="text-sm">
+
+                        <li id="manageProfiles" class="px-4 py-2 hover:bg-gray-800 cursor-pointer">
+                        Manage Profiles
+                        </li>
+                        
+                        <li id="accountBtn" class="px-4 py-2 hover:bg-gray-800 cursor-pointer">
+                        Account
+                        </li>
+                        
+                        <li id="helpBtn" class="px-4 py-2 hover:bg-gray-800 cursor-pointer">
+                        Help Center
+                        </li>
+                        
+                        <li id="logoutBtn" class="px-4 py-2 hover:bg-gray-800 cursor-pointer border-t border-gray-700">
+                        Sign out of StreamFlix
+                        </li>
+                        
+                        </ul>
+            
+                </div>
             </div>
         </div>
     </header>
@@ -100,6 +131,7 @@
     <section id="hero" class="relative min-h-[90vh] md:h-[95vh] w-full bg-cover bg-center flex items-center px-4 md:px-12 transition-all duration-1000 bg-gray-900 overflow-hidden">
         <div class="hero-overlay absolute inset-0"></div>
         <div id="heroProgressBar" class="progress-bar"></div>
+        
         
         <!-- Large padding-bottom (pb-48) creates a safe zone for the rows sliding up -->
         <div id="heroContent" class="relative max-w-2xl z-10 pt-32 pb-48 md:pb-64">
@@ -450,6 +482,99 @@
         }
 
         initApp();
+
+/* PROFILE DROPDOWN */
+const profileBtn = document.getElementById("profileBtn");
+const profileMenu = document.getElementById("profileMenu");
+
+profileBtn.addEventListener("click", () => {
+    profileMenu.classList.toggle("hidden");
+});
+
+window.addEventListener("click", (e) => {
+    if (!profileBtn.contains(e.target) && !profileMenu.contains(e.target)) {
+        profileMenu.classList.add("hidden");
+    }
+});
+/* PROFILE MENU FUNCTIONS */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+const manageProfiles = document.getElementById("manageProfiles");
+const accountBtn = document.getElementById("accountBtn");
+const helpBtn = document.getElementById("helpBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+const profilesModal = document.getElementById("profilesModal");
+const closeProfiles = document.getElementById("closeProfiles");
+
+if(manageProfiles){
+manageProfiles.onclick = () => {
+profilesModal.classList.remove("hidden");
+};
+}
+
+if(closeProfiles){
+closeProfiles.onclick = () => {
+profilesModal.classList.add("hidden");
+};
+}
+
+if(accountBtn){
+accountBtn.onclick = () => {
+window.open("https://www.themoviedb.org/settings/account","_blank");
+};
+}
+
+if(helpBtn){
+helpBtn.onclick = () => {
+window.open("https://help.netflix.com","_blank");
+};
+}
+
+if(logoutBtn){
+logoutBtn.onclick = () => {
+alert("Signed out of StreamFlix");
+location.reload();
+};
+}
+
+});
     </script>
+
+    <div id="profilesModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-[500]">
+
+        <div class="text-center">
+        
+        <h2 class="text-4xl font-bold mb-10">Manage Profiles</h2>
+        
+        <div class="flex space-x-10">
+        
+        <div class="cursor-pointer">
+        <img class="w-24 rounded-lg" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png">
+        <p class="mt-2">Shashank</p>
+        </div>
+        
+        <div class="cursor-pointer">
+        <img class="w-24 rounded-lg" src="https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png">
+        <p class="mt-2">Kids</p>
+        </div>
+        
+        <div class="cursor-pointer">
+        <div class="w-24 h-24 bg-gray-700 flex items-center justify-center text-3xl rounded-lg">
+        +
+        </div>
+        <p class="mt-2">Add Profile</p>
+        </div>
+        
+        </div>
+        
+        <button id="closeProfiles" class="mt-10 bg-red-600 px-6 py-2 rounded">
+        Done
+        </button>
+        
+        </div>
+        
+        </div>
 </body>
 </html>
